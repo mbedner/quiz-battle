@@ -18,11 +18,18 @@ const PRE_RESOLVE    = 2500;  // pause after attacks locked so players look up
 const RESOLVE_TIME   = 3000;
 const INTERMISSION   = 1500;
 
+const RECONNECT_GRACE_MS = 30_000;
+
 export class GameEngine {
   private io: Server;
   private state: GameState;
   private timer: NodeJS.Timeout | null = null;
   private countdown: NodeJS.Timeout | null = null;
+
+  // Reconnection tracking (server-side only — tokens never leave the server)
+  private socketTokens   = new Map<string, string>(); // socketId  → token
+  private tokenToId      = new Map<string, string>(); // token     → current socketId
+  private gracePeriods   = new Map<string, NodeJS.Timeout>(); // token → expiry timer
 
   constructor(io: Server, serverUrl: string) {
     this.io = io;
@@ -48,7 +55,27 @@ export class GameEngine {
       if (!prevAlive) { this.state.hostId = socket.id; this.broadcast(); }
     });
 
-    socket.on('join_lobby', ({ name, mode }: { name: string; mode: PlayerMode }) => {
+    socket.on('join_lobby', ({ name, mode, token }: { name: string; mode: PlayerMode; token?: string }) => {
+      // ── Reconnection path ───────────────────────────────────────
+      if (token && this.gracePeriods.has(token)) {
+        const oldId = this.tokenToId.get(token);
+        const player = oldId ? this.state.players.find(p => p.id === oldId) : undefined;
+        if (player?.isDisconnected) {
+          clearTimeout(this.gracePeriods.get(token)!);
+          this.gracePeriods.delete(token);
+          if (oldId) this.socketTokens.delete(oldId);
+          // Remap to new socket
+          player.id = socket.id;
+          player.isDisconnected = false;
+          this.socketTokens.set(socket.id, token);
+          this.tokenToId.set(token, socket.id);
+          this.state.message = `${player.name} reconnected!`;
+          this.broadcast();
+          return;
+        }
+      }
+
+      // ── Normal join ─────────────────────────────────────────────
       if (this.state.phase !== 'lobby' && this.state.phase !== 'character_select') return;
       if (this.state.players.find(p => p.id === socket.id)) return;
       this.state.players.push({
@@ -56,6 +83,10 @@ export class GameEngine {
         character: null, hp: 100, maxHp: 100, hype: 0,
         isEliminated: false, isHost: false,
       });
+      if (token) {
+        this.socketTokens.set(socket.id, token);
+        this.tokenToId.set(token, socket.id);
+      }
       this.state.message = `${name} joined!`;
       this.broadcast();
 
@@ -145,6 +176,33 @@ export class GameEngine {
     });
 
     socket.on('disconnect', () => this.handleDisconnect(socket.id));
+  }
+
+  // ── Reconnection grace period ──────────────────────────────────
+
+  private startGracePeriod(player: Player, token: string) {
+    player.isDisconnected = true;
+
+    // If we're mid-answering, force a null answer so the round isn't stuck
+    if (this.state.phase === 'battle' && this.state.roundPhase === 'answering') {
+      if (this.state.playerAnswerStatus[player.id] === null) {
+        this.state.playerAnswerStatus[player.id] = 'wrong';
+        const connected = this.state.players.filter(p => !p.isEliminated && !p.isDisconnected);
+        const allDone = connected.every(p => this.state.playerAnswerStatus[p.id] !== null);
+        if (allDone) { this.clearAll(); this.endAnswering(); return; }
+      }
+    }
+
+    this.state.message = `${player.name} disconnected — 30s to reconnect…`;
+    this.broadcast();
+
+    const timer = setTimeout(() => {
+      this.gracePeriods.delete(token);
+      this.tokenToId.delete(token);
+      // Grace period expired — run normal removal
+      this.removePlayer(player.id);
+    }, RECONNECT_GRACE_MS);
+    this.gracePeriods.set(token, timer);
   }
 
   // ── Battle lifecycle ───────────────────────────────────────────
@@ -352,25 +410,46 @@ export class GameEngine {
 
   private handleDisconnect(id: string) {
     if (id === this.state.hostId) this.state.hostId = null;
-    const idx = this.state.players.findIndex(p => p.id === id);
-    if (idx !== -1) {
-      const name = this.state.players[idx].name;
-      this.state.players.splice(idx, 1);
 
-      if (this.state.phase === 'battle') {
-        const alive = this.active();
-        if (alive.length <= 1) { this.endGame(alive[0] ?? null); return; }
-        if (this.state.roundPhase === 'answering') {
-          const allAnswered = alive.every(p => this.state.playerAnswerStatus[p.id] !== null);
-          if (allAnswered) { this.clearAll(); this.endAnswering(); return; }
-        }
-      } else if (this.state.phase === 'game_over' || this.state.phase === 'character_select') {
-        // Can't continue without 2 players — go back to lobby
-        if (this.state.players.length < 2) { this.goToLobby(); return; }
-      }
+    const player = this.state.players.find(p => p.id === id);
+    if (!player) { this.broadcast(); return; }
 
-      this.state.message = `${name} left.`;
+    const token = this.socketTokens.get(id);
+    this.socketTokens.delete(id);
+
+    // Mid-game with a token → enter grace period instead of removing immediately
+    const midGame = this.state.phase === 'battle'
+      || this.state.phase === 'character_select'
+      || this.state.phase === 'game_over';
+
+    if (token && midGame && !player.isDisconnected) {
+      this.startGracePeriod(player, token);
+      return;
     }
+
+    // No token, lobby phase, or already in grace period expiry → remove now
+    this.removePlayer(id);
+  }
+
+  private removePlayer(id: string) {
+    const idx = this.state.players.findIndex(p => p.id === id);
+    if (idx === -1) { this.broadcast(); return; }
+
+    const name = this.state.players[idx].name;
+    this.state.players.splice(idx, 1);
+
+    if (this.state.phase === 'battle') {
+      const alive = this.active();
+      if (alive.length <= 1) { this.endGame(alive[0] ?? null); return; }
+      if (this.state.roundPhase === 'answering') {
+        const allAnswered = alive.every(p => this.state.playerAnswerStatus[p.id] !== null);
+        if (allAnswered) { this.clearAll(); this.endAnswering(); return; }
+      }
+    } else if (this.state.phase === 'game_over' || this.state.phase === 'character_select') {
+      if (this.state.players.length < 2) { this.goToLobby(); return; }
+    }
+
+    this.state.message = `${name} left.`;
     this.broadcast();
   }
 

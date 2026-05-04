@@ -52,6 +52,13 @@ export function PlayerScreen({ state, myId }: Props) {
 
 // ── Join ──────────────────────────────────────────────────────
 
+// Persistent token lets the server recognise this device on reconnect
+function getOrCreateToken(): string {
+  let t = localStorage.getItem('bq_token');
+  if (!t) { t = crypto.randomUUID(); localStorage.setItem('bq_token', t); }
+  return t;
+}
+
 function JoinForm() {
   const [name, setName] = useState(() => sessionStorage.getItem('bq_name') ?? '');
   const [mode, setMode] = useState<PlayerMode>(() => (sessionStorage.getItem('bq_mode') as PlayerMode) ?? 'kid');
@@ -62,7 +69,7 @@ function JoinForm() {
     sessionStorage.setItem('bq_name', name.trim());
     sessionStorage.setItem('bq_mode', mode);
     setSent(true);
-    socket.emit('join_lobby', { name: name.trim(), mode });
+    socket.emit('join_lobby', { name: name.trim(), mode, token: getOrCreateToken() });
   };
 
   return (

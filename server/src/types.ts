@@ -17,6 +17,7 @@ export interface Player {
   hype: number;
   isEliminated: boolean;
   isHost: boolean;
+  isDisconnected?: boolean; // true while in the 30-second reconnect grace period
 }
 
 export interface Question {

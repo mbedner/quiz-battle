@@ -20,8 +20,18 @@ export default function App() {
   useEffect(() => {
     const onConnect = () => {
       setMyId(socket.id ?? '');
-      // Always re-register as host on (re)connect so restarts work cleanly
-      if (!isJoinPage) socket.emit('set_host');
+      if (!isJoinPage) {
+        // Always re-register as host on (re)connect so restarts work cleanly
+        socket.emit('set_host');
+      } else {
+        // Player: auto-rejoin on reconnect using stored credentials + token
+        const name  = sessionStorage.getItem('bq_name');
+        const mode  = sessionStorage.getItem('bq_mode');
+        const token = localStorage.getItem('bq_token');
+        if (name && mode && token) {
+          socket.emit('join_lobby', { name, mode, token });
+        }
+      }
     };
     const onState = (s: GameState) => setState(s);
 
