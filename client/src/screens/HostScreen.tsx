@@ -429,6 +429,13 @@ function PlayerHUD({ player, wins, flip }: { player: Player; wins: number; flip:
 
 function BattleView({ state }: { state: GameState }) {
   const [p1, p2] = state.players;
+  const [confirmQuit, setConfirmQuit] = useState(false);
+  const paused = state.paused ?? false;
+
+  const handlePause  = () => { setConfirmQuit(false); socket.emit('pause_game'); };
+  const handleResume = () => { setConfirmQuit(false); socket.emit('resume_game'); };
+  const handleQuit   = () => { socket.emit('restart_game'); };
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#020617', overflow: 'hidden' }}>
 
@@ -436,12 +443,11 @@ function BattleView({ state }: { state: GameState }) {
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
         display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 10px 0',
-        pointerEvents: 'none',
       }}>
         {p1 && <PlayerHUD player={p1} wins={state.matchWins[p1.id] ?? 0} flip={false} />}
 
-        {/* Center — battle number */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+        {/* Center — battle number + pause button */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
           <div className="px-clip" style={{
             background: '#060d20ee', border: '3px solid #1e3050',
             boxShadow: '4px 4px 0 #000000bb',
@@ -451,10 +457,69 @@ function BattleView({ state }: { state: GameState }) {
               ⚔ BATTLE {state.battleNumber}
             </span>
           </div>
+          <button
+            onClick={paused ? handleResume : handlePause}
+            className="px-clip"
+            style={{
+              background: paused ? '#052e16ee' : '#060d20cc',
+              border: `2px solid ${paused ? '#22c55e' : '#1e3050'}`,
+              boxShadow: '3px 3px 0 #000000bb',
+              padding: '5px 14px', cursor: 'pointer',
+              fontFamily: "'Press Start 2P', monospace", fontSize: 9,
+              color: paused ? '#22c55e' : '#64748b',
+              letterSpacing: 1,
+            }}
+          >
+            {paused ? '▶ RESUME' : '⏸ PAUSE'}
+          </button>
         </div>
 
         {p2 && <PlayerHUD player={p2} wins={state.matchWins[p2.id] ?? 0} flip={true} />}
       </div>
+
+      {/* Pause overlay */}
+      {paused && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 50,
+          background: '#000000bb',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20,
+        }}>
+          <div className="px-clip" style={{
+            background: '#060d20f0', border: '3px solid #1e3050',
+            boxShadow: '6px 6px 0 #000000cc',
+            padding: '36px 48px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24,
+          }}>
+            <span style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 28, color: '#e2e8f0', letterSpacing: 4 }}>
+              ⏸ PAUSED
+            </span>
+
+            <button onClick={handleResume} className="px-btn px-btn-green" style={{ padding: '14px 36px', fontSize: 11, width: '100%' }}>
+              ▶ Resume
+            </button>
+
+            {!confirmQuit ? (
+              <button onClick={() => setConfirmQuit(true)} className="px-btn px-btn-dark" style={{ padding: '14px 36px', fontSize: 11, width: '100%' }}>
+                ↩ Quit to Lobby
+              </button>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', alignItems: 'center' }}>
+                <span style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 8, color: '#ef4444', lineHeight: 1.8, textAlign: 'center' }}>
+                  Are you sure? This ends the game!
+                </span>
+                <div style={{ display: 'flex', gap: 10, width: '100%' }}>
+                  <button onClick={() => setConfirmQuit(false)} className="px-btn px-btn-dark" style={{ flex: 1, fontSize: 9, padding: '12px 0' }}>
+                    Cancel
+                  </button>
+                  <button onClick={handleQuit} className="px-btn px-btn-purple" style={{ flex: 1, fontSize: 9, padding: '12px 0' }}>
+                    ✓ Quit
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* FightingStage — fills full viewport */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
@@ -476,7 +541,6 @@ function BattleView({ state }: { state: GameState }) {
         <div style={{
           position: 'absolute', top: 110, left: 0, right: 0, zIndex: 20,
           display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap',
-          pointerEvents: 'none',
         }}>
           {state.players.filter(p => !p.isEliminated).map(p => {
             const status = state.playerAnswerStatus[p.id];

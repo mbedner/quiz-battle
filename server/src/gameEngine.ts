@@ -25,6 +25,7 @@ export class GameEngine {
   private state: GameState;
   private timer: NodeJS.Timeout | null = null;
   private countdown: NodeJS.Timeout | null = null;
+  private countdownCallback: (() => void) | null = null; // stored for pause/resume
 
   // Reconnection tracking (server-side only — tokens never leave the server)
   private socketTokens   = new Map<string, string>(); // socketId  → token
@@ -150,6 +151,29 @@ export class GameEngine {
     socket.on('restart_game', () => {
       if (socket.id !== this.state.hostId) return;
       this.restartGame();
+    });
+
+    socket.on('pause_game', () => {
+      if (socket.id !== this.state.hostId) return;
+      if (this.state.phase !== 'battle' || this.state.paused) return;
+      this.state.paused = true;
+      // Suspend the active countdown; callback + remaining time are preserved
+      if (this.countdown) {
+        clearInterval(this.countdown);
+        this.countdown = null;
+      }
+      this.broadcast();
+    });
+
+    socket.on('resume_game', () => {
+      if (socket.id !== this.state.hostId) return;
+      if (!this.state.paused) return;
+      this.state.paused = false;
+      // Resume countdown from where it left off
+      if (this.countdownCallback && this.state.timeLeft > 0) {
+        this.startCountdown(this.state.timeLeft, this.countdownCallback);
+      }
+      this.broadcast();
     });
 
     socket.on('rematch_game', () => {
@@ -467,16 +491,24 @@ export class GameEngine {
   private active() { return this.state.players.filter(p => !p.isEliminated); }
 
   private clearAll() {
-    if (this.timer)    { clearTimeout(this.timer);    this.timer    = null; }
-    if (this.countdown){ clearInterval(this.countdown); this.countdown = null; }
+    if (this.timer)    { clearTimeout(this.timer);     this.timer           = null; }
+    if (this.countdown){ clearInterval(this.countdown); this.countdown       = null; }
+    this.countdownCallback = null;
+    this.state.paused = false;
   }
 
   private startCountdown(secs: number, onDone: () => void) {
     this.state.timeLeft = secs;
+    this.countdownCallback = onDone;
     this.countdown = setInterval(() => {
       this.state.timeLeft = Math.max(0, this.state.timeLeft - 1);
       this.broadcast();
-      if (this.state.timeLeft <= 0) { clearInterval(this.countdown!); this.countdown = null; onDone(); }
+      if (this.state.timeLeft <= 0) {
+        clearInterval(this.countdown!);
+        this.countdown = null;
+        this.countdownCallback = null;
+        onDone();
+      }
     }, 1000);
   }
 

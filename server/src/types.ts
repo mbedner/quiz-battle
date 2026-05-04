@@ -66,4 +66,5 @@ export interface GameState {
   serverUrl: string;
   message: string;
   timeLeft: number;
+  paused?: boolean;
 }
