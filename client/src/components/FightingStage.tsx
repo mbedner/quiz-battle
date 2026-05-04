@@ -479,12 +479,13 @@ export function FightingStage({
           onComplete: () => { s.app.stage.x = 0; s.app.stage.y = 0; },
         });
 
-        // White hit-flash overlay on target box
+        // White hit-flash overlay — covers the full sprite body
+        // Sprite is 160×160 with anchor (0.5, 1): x ∈ [-80,+80], y ∈ [-160, 0]
         const flash = new PIXI.Graphics();
         flash.beginFill(0xffffff);
-        flash.drawRoundedRect(-58, -58, 116, 116, 20);
+        flash.drawRoundedRect(-80, -160, 160, 160, 16);
         flash.endFill();
-        tf.container.addChildAt(flash, 1); // behind emoji
+        tf.container.addChildAt(flash, 1); // behind name label / badge
         gsap.to(flash, {
           alpha: 0, duration: 0.38,
           onComplete: () => flash.destroy(),

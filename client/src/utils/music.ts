@@ -7,6 +7,8 @@
 class MusicSystem {
   private audio: HTMLAudioElement | null = null;
   private currentSrc = '';
+  private pendingSrc = '';
+  private interactionBound = false;
   muted: boolean;
   volume: number;
 
@@ -28,7 +30,27 @@ class MusicSystem {
     const a = new Audio(src);
     a.loop   = true;
     a.volume = this.muted ? 0 : Math.min(1, this.volume);
-    a.play().catch(() => { /* autoplay blocked — user hasn't interacted yet */ });
+    a.play().catch(() => {
+      // Browser blocked autoplay — queue src and retry on first user interaction
+      this.pendingSrc = src;
+      if (!this.interactionBound) {
+        this.interactionBound = true;
+        const retry = () => {
+          document.removeEventListener('click',      retry);
+          document.removeEventListener('keydown',    retry);
+          document.removeEventListener('touchstart', retry);
+          this.interactionBound = false;
+          if (this.pendingSrc) {
+            const s = this.pendingSrc;
+            this.pendingSrc = '';
+            this.play(s);
+          }
+        };
+        document.addEventListener('click',      retry, { once: true });
+        document.addEventListener('keydown',    retry, { once: true });
+        document.addEventListener('touchstart', retry, { once: true });
+      }
+    });
     this.audio      = a;
     this.currentSrc = src;
   }

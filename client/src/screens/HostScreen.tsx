@@ -40,7 +40,7 @@ export function HostScreen({ state }: Props) {
 
   return (
     <div style={{ minHeight: '100vh', background: '#020617', color: '#e2e8f0', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <header style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+      <header style={{ display: 'flex', alignItems: 'center', position: 'relative', minHeight: 56 }}>
         {state.phase !== 'game_over' && (
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
             <img src="/quiz-battle-logo.png" alt="Quiz Battle" style={{ height: 44, imageRendering: 'pixelated', filter: 'drop-shadow(0 2px 8px #000000cc)' }} />
