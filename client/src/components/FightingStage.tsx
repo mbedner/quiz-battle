@@ -28,6 +28,7 @@ const FLOOR_Y = H - FLOOR_H;
 
 interface FighterObj {
   container: PIXI.Container;
+  nameTxt: PIXI.Text;       // lives outside container so it doesn't sway
   badgeGfx: PIXI.Graphics;
   badgeTxt: PIXI.Text;
   idleTween: gsap.core.Animation | null;
@@ -214,7 +215,7 @@ export function FightingStage({
     if (!s) return;
 
     // Teardown
-    s.fighters.forEach(f => { f.idleTween?.kill(); f.container.destroy({ children: true }); });
+    s.fighters.forEach(f => { f.idleTween?.kill(); f.nameTxt.destroy(); f.container.destroy({ children: true }); });
     s.fighters.length = 0;
     s.hpBars.forEach(b => b.fill.parent?.parent?.destroy({ children: false }));
     s.hpBars.length = 0;
@@ -243,14 +244,14 @@ export function FightingStage({
       if (flip) sprImg.scale.x = -sprImg.scale.x;
       container.addChild(sprImg);
 
-      // Name label
+      // Name label — added to fighterLayer directly (not to container)
+      // so it stays perfectly still while the container sways during idle animation
       const nameTxt = new PIXI.Text(p.name, {
         fontFamily: "'Press Start 2P', monospace", fontSize: 9, fontWeight: '400',
         fill: '#e2e8f0', stroke: '#000000', strokeThickness: 3, align: 'center',
       });
       nameTxt.anchor.set(0.5);
-      nameTxt.y = 14;
-      container.addChild(nameTxt);
+      nameTxt.position.set(baseX, baseY + 14);
 
       // Answer status badge (shown during answering phase)
       const badgeGfx = new PIXI.Graphics();
@@ -261,7 +262,9 @@ export function FightingStage({
       badgeTxt.visible = false;
       container.addChild(badgeGfx, badgeTxt);
 
+      // container first, nameTxt on top so it always renders above the sprite
       s.fighterLayer.addChild(container);
+      s.fighterLayer.addChild(nameTxt);
 
       // Weight-shift idle: subtle sway forward/back + gentle tilt
       const swayDir = flip ? -1 : 1;
@@ -273,7 +276,7 @@ export function FightingStage({
         .to(container, { x: baseX, rotation: 0, duration: 0.8, ease: 'sine.inOut' });
       const idleTween = idleTl as gsap.core.Animation;
 
-      s.fighters.push({ container, badgeGfx, badgeTxt, idleTween, baseX, baseY, flip });
+      s.fighters.push({ container, nameTxt, badgeGfx, badgeTxt, idleTween, baseX, baseY, flip });
     });
 
     // ── Build HP bars (only when not hiding them)
@@ -346,6 +349,7 @@ export function FightingStage({
       if (fighter && p.isEliminated) {
         fighter.idleTween?.kill();
         fighter.container.alpha = 0.4;
+        fighter.nameTxt.alpha   = 0.4;
       }
     });
   });
