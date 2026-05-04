@@ -4,7 +4,7 @@ export type RoundPhase = 'announcing' | 'answering' | 'attacking' | 'resolving' 
 export type AnswerStatus = 'correct' | 'wrong' | null;
 export type AttackType = 'normal' | 'power' | 'ultimate';
 
-export const CHARACTERS = ['carnage', 'green-ranger', 'leonardo', 'megatron', 'optimus', 'spiderman', 'venom', 'wolverine'] as const;
+export const CHARACTERS = ['batman', 'carnage', 'godzilla', 'green-ranger', 'jinu', 'king-kong', 'leonardo', 'mecha-godzilla', 'megatron', 'optimus', 'spiderman', 'venom', 'wolverine'] as const;
 export type CharacterName = typeof CHARACTERS[number];
 
 export interface Player {

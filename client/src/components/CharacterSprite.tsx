@@ -7,14 +7,19 @@ interface CharacterConfig {
 }
 
 export const CHARACTER_CONFIG: Record<CharacterName, CharacterConfig> = {
-  carnage:      { bg: 'linear-gradient(135deg, #7f1d1d, #dc2626)', glow: '#dc2626',  label: 'Carnage' },
-  'green-ranger': { bg: 'linear-gradient(135deg, #14532d, #22c55e)', glow: '#22c55e',  label: 'Green Ranger' },
-  leonardo:     { bg: 'linear-gradient(135deg, #1e3a5f, #3b82f6)', glow: '#3b82f6',  label: 'Leonardo' },
-  megatron:     { bg: 'linear-gradient(135deg, #1f2937, #6b7280)', glow: '#9ca3af',  label: 'Megatron' },
-  optimus:      { bg: 'linear-gradient(135deg, #1e1b4b, #6366f1)', glow: '#818cf8',  label: 'Optimus' },
-  spiderman:    { bg: 'linear-gradient(135deg, #450a0a, #ef4444)', glow: '#ef4444',  label: 'Spiderman' },
-  venom:        { bg: 'linear-gradient(135deg, #0f172a, #475569)', glow: '#94a3b8',  label: 'Venom' },
-  wolverine:    { bg: 'linear-gradient(135deg, #422006, #f59e0b)', glow: '#fbbf24',  label: 'Wolverine' },
+  batman:           { bg: 'linear-gradient(135deg, #1c1917, #44403c)', glow: '#a8a29e',  label: 'Batman' },
+  carnage:          { bg: 'linear-gradient(135deg, #7f1d1d, #dc2626)', glow: '#dc2626',  label: 'Carnage' },
+  godzilla:         { bg: 'linear-gradient(135deg, #14532d, #16a34a)', glow: '#4ade80',  label: 'Godzilla' },
+  'green-ranger':   { bg: 'linear-gradient(135deg, #14532d, #22c55e)', glow: '#22c55e',  label: 'Green Ranger' },
+  jinu:             { bg: 'linear-gradient(135deg, #4c1d95, #7c3aed)', glow: '#a78bfa',  label: 'Jinu' },
+  'king-kong':      { bg: 'linear-gradient(135deg, #292524, #78716c)', glow: '#d6d3d1',  label: 'King Kong' },
+  leonardo:         { bg: 'linear-gradient(135deg, #1e3a5f, #3b82f6)', glow: '#3b82f6',  label: 'Leonardo' },
+  'mecha-godzilla': { bg: 'linear-gradient(135deg, #0c4a6e, #0ea5e9)', glow: '#38bdf8',  label: 'Mecha Godzilla' },
+  megatron:         { bg: 'linear-gradient(135deg, #1f2937, #6b7280)', glow: '#9ca3af',  label: 'Megatron' },
+  optimus:          { bg: 'linear-gradient(135deg, #1e1b4b, #6366f1)', glow: '#818cf8',  label: 'Optimus' },
+  spiderman:        { bg: 'linear-gradient(135deg, #450a0a, #ef4444)', glow: '#ef4444',  label: 'Spiderman' },
+  venom:            { bg: 'linear-gradient(135deg, #0f172a, #475569)', glow: '#94a3b8',  label: 'Venom' },
+  wolverine:        { bg: 'linear-gradient(135deg, #422006, #f59e0b)', glow: '#fbbf24',  label: 'Wolverine' },
 };
 
 interface Props {
