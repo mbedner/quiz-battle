@@ -183,7 +183,16 @@ export class GameEngine {
   private startGracePeriod(player: Player, token: string) {
     player.isDisconnected = true;
 
-    // If we're mid-answering, force a null answer so the round isn't stuck
+    // Always register the timer first so reconnection works regardless of
+    // what happens next (e.g. endAnswering returning early below)
+    const timer = setTimeout(() => {
+      this.gracePeriods.delete(token);
+      this.tokenToId.delete(token);
+      this.removePlayer(player.id);
+    }, RECONNECT_GRACE_MS);
+    this.gracePeriods.set(token, timer);
+
+    // If we're mid-answering, force their answer so the round isn't stuck
     if (this.state.phase === 'battle' && this.state.roundPhase === 'answering') {
       if (this.state.playerAnswerStatus[player.id] === null) {
         this.state.playerAnswerStatus[player.id] = 'wrong';
@@ -195,14 +204,6 @@ export class GameEngine {
 
     this.state.message = `${player.name} disconnected — 30s to reconnect…`;
     this.broadcast();
-
-    const timer = setTimeout(() => {
-      this.gracePeriods.delete(token);
-      this.tokenToId.delete(token);
-      // Grace period expired — run normal removal
-      this.removePlayer(player.id);
-    }, RECONNECT_GRACE_MS);
-    this.gracePeriods.set(token, timer);
   }
 
   // ── Battle lifecycle ───────────────────────────────────────────

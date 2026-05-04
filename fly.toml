@@ -16,6 +16,12 @@ primary_region = 'iad'
   auto_start_machines = true
   min_machines_running = 1
 
+[deploy]
+  # "immediate" kills the old machine before starting the new one,
+  # preventing two machines from running simultaneously.
+  # Critical for in-memory Socket.io state — two machines = split brain.
+  strategy = "immediate"
+
 [[vm]]
   memory = '256mb'
   cpu_kind = 'shared'
