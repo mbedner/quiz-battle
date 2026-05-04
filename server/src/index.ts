@@ -7,13 +7,19 @@ import path from 'path';
 import { GameEngine } from './gameEngine';
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: '*' }));
 
-const CLIENT_DIST = path.join(__dirname, '../../client/dist');
-app.use(express.static(CLIENT_DIST));
-app.get('*', (_req, res) => {
-  res.sendFile(path.join(CLIENT_DIST, 'index.html'));
-});
+// In production the client is on Vercel (separate origin), so we don't
+// serve static files from the server. In local dev we still serve them
+// so the old single-process workflow keeps working.
+const isProduction = process.env.NODE_ENV === 'production';
+if (!isProduction) {
+  const CLIENT_DIST = path.join(__dirname, '../../client/dist');
+  app.use(express.static(CLIENT_DIST));
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(CLIENT_DIST, 'index.html'));
+  });
+}
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -21,8 +27,10 @@ const io = new Server(httpServer, {
 });
 
 const PORT = Number(process.env.PORT) || 3001;
-const localIP = getLocalIP();
-const serverUrl = `http://${localIP}:${PORT}`;
+
+// PUBLIC_URL is set by Railway (or manually) so the server knows its own address.
+// Falls back to local IP for dev.
+const serverUrl = process.env.PUBLIC_URL ?? `http://${getLocalIP()}:${PORT}`;
 
 const engine = new GameEngine(io, serverUrl);
 
@@ -32,8 +40,7 @@ io.on('connection', socket => {
 
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🎮 Kids Battle Quiz\n`);
-  console.log(`  Host screen:  http://localhost:${PORT}`);
-  console.log(`  Player join:  ${serverUrl}/join`);
+  console.log(`  Server:  ${serverUrl}`);
   console.log(`\n  Share the QR on the host screen for players to join!\n`);
 });
 

@@ -12,7 +12,8 @@ import { music, trackForBattle } from '../utils/music';
 interface Props { state: GameState; }
 
 export function HostScreen({ state }: Props) {
-  const joinUrl = (state.serverUrl || window.location.origin).replace(':3001', ':3000') + '/join';
+  // QR code always points to the frontend origin (Vercel in prod, localhost:3000 in dev)
+  const joinUrl = `${window.location.origin}/join`;
   const [showSettings, setShowSettings] = useState(false);
 
   const prevPhase = useRef(state.phase);
