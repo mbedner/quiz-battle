@@ -446,8 +446,8 @@ function BattleView({ state }: { state: GameState }) {
       }}>
         {p1 && <PlayerHUD player={p1} wins={state.matchWins[p1.id] ?? 0} flip={false} />}
 
-        {/* Center — battle number + pause button */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        {/* Center — battle number */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <div className="px-clip" style={{
             background: '#060d20ee', border: '3px solid #1e3050',
             boxShadow: '4px 4px 0 #000000bb',
@@ -457,24 +457,31 @@ function BattleView({ state }: { state: GameState }) {
               ⚔ BATTLE {state.battleNumber}
             </span>
           </div>
-          <button
-            onClick={paused ? handleResume : handlePause}
-            className="px-clip"
-            style={{
-              background: paused ? '#052e16ee' : '#060d20cc',
-              border: `2px solid ${paused ? '#22c55e' : '#1e3050'}`,
-              boxShadow: '3px 3px 0 #000000bb',
-              padding: '5px 14px', cursor: 'pointer',
-              fontFamily: "'Press Start 2P', monospace", fontSize: 9,
-              color: paused ? '#22c55e' : '#64748b',
-              letterSpacing: 1,
-            }}
-          >
-            {paused ? '▶ RESUME' : '⏸ PAUSE'}
-          </button>
         </div>
 
         {p2 && <PlayerHUD player={p2} wins={state.matchWins[p2.id] ?? 0} flip={true} />}
+      </div>
+
+      {/* Pause button — bottom center */}
+      <div style={{
+        position: 'absolute', bottom: 16, left: 0, right: 0, zIndex: 20,
+        display: 'flex', justifyContent: 'center',
+      }}>
+        <button
+          onClick={paused ? handleResume : handlePause}
+          className="px-clip"
+          style={{
+            background: paused ? '#052e16ee' : '#060d20cc',
+            border: `2px solid ${paused ? '#22c55e' : '#1e3050'}`,
+            boxShadow: '3px 3px 0 #000000bb',
+            padding: '8px 20px', cursor: 'pointer',
+            fontFamily: "'Press Start 2P', monospace", fontSize: 9,
+            color: paused ? '#22c55e' : '#475569',
+            letterSpacing: 1,
+          }}
+        >
+          {paused ? '▶ RESUME' : '⏸ PAUSE'}
+        </button>
       </div>
 
       {/* Pause overlay */}
