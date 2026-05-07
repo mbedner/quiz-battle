@@ -152,10 +152,187 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ── Story ─────────────────────────────────────────────────────
+
+const STORY: { text: string; type?: 'divider' | 'title' | 'welcome' }[] = [
+  { text: 'Somewhere beyond all worlds...' },
+  { text: '◆', type: 'divider' },
+  { text: 'There is a place where\nchampions gather.' },
+  { text: '◆', type: 'divider' },
+  { text: 'Not to fight with swords...\nBut with their brains.' },
+  { text: '◆', type: 'divider' },
+  { text: 'The Quiz King has summoned\nthe greatest heroes and villains\nfrom every universe to compete.' },
+  { text: '◆', type: 'divider' },
+  { text: 'Only one can win.\nOnly one can prove\nthey are the smartest.' },
+  { text: '◆', type: 'divider' },
+  { text: 'Welcome to...', type: 'welcome' },
+  { text: 'QUIZ BATTLE!', type: 'title' },
+];
+
+// Render a paragraph with heroes/villains coloring applied once fully revealed
+function StoryParagraph({ text, type, revealed }: { text: string; type?: string; revealed: boolean }) {
+  if (type === 'divider') {
+    return <div style={{ color: '#6b21a8', fontSize: 14, lineHeight: 1, textAlign: 'center', opacity: 0.7 }}>◆</div>;
+  }
+  if (type === 'title') {
+    return (
+      <div style={{
+        fontFamily: "'Press Start 2P', monospace",
+        fontSize: 28, fontWeight: 700,
+        background: 'linear-gradient(180deg, #fef08a 0%, #f59e0b 40%, #d97706 100%)',
+        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text',
+        textShadow: 'none',
+        textAlign: 'center', letterSpacing: 3,
+        filter: 'drop-shadow(0 2px 8px #f59e0baa)',
+        animation: revealed ? 'logo-bob 3s ease-in-out infinite' : 'none',
+      }}>
+        {text}
+      </div>
+    );
+  }
+  if (type === 'welcome') {
+    return (
+      <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 13, color: '#e2e8f0', textAlign: 'center', lineHeight: 2 }}>
+        {text}
+      </div>
+    );
+  }
+
+  // Normal paragraph — color heroes/villains once fully revealed
+  if (revealed && text.includes('heroes')) {
+    const parts = text.split(/(heroes|villains)/g);
+    return (
+      <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 12, color: '#cbd5e1', textAlign: 'center', lineHeight: 2, whiteSpace: 'pre-line' }}>
+        {parts.map((p, i) =>
+          p === 'heroes'   ? <span key={i} style={{ color: '#60a5fa' }}>heroes</span>
+          : p === 'villains' ? <span key={i} style={{ color: '#f87171' }}>villains</span>
+          : p
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 12, color: '#cbd5e1', textAlign: 'center', lineHeight: 2, whiteSpace: 'pre-line' }}>
+      {text}
+    </div>
+  );
+}
+
+function StoryView({ onClose }: { onClose: () => void }) {
+  const [paraIdx,  setParaIdx]  = useState(0);
+  const [charIdx,  setCharIdx]  = useState(0);
+  const [revealed, setRevealed] = useState<boolean[]>(STORY.map(() => false));
+
+  // Typewriter tick
+  useEffect(() => {
+    if (paraIdx >= STORY.length) return;
+    const para = STORY[paraIdx];
+
+    // Dividers appear instantly
+    if (para.type === 'divider') {
+      setRevealed(r => { const n = [...r]; n[paraIdx] = true; return n; });
+      const t = setTimeout(() => { setParaIdx(i => i + 1); setCharIdx(0); }, 300);
+      return () => clearTimeout(t);
+    }
+
+    if (charIdx < para.text.length) {
+      const delay = para.type === 'title' ? 80 : 28;
+      const t = setTimeout(() => setCharIdx(c => c + 1), delay);
+      return () => clearTimeout(t);
+    } else {
+      // Paragraph done — mark revealed, pause briefly, advance
+      setRevealed(r => { const n = [...r]; n[paraIdx] = true; return n; });
+      const pause = para.type === 'title' ? 0 : para.type === 'welcome' ? 400 : 600;
+      const t = setTimeout(() => { setParaIdx(i => i + 1); setCharIdx(0); }, pause);
+      return () => clearTimeout(t);
+    }
+  }, [paraIdx, charIdx]);
+
+  const skipAll = () => {
+    setParaIdx(STORY.length);
+    setCharIdx(0);
+    setRevealed(STORY.map(() => true));
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 100,
+      backgroundImage: "url('/lobby-bg.png')",
+      backgroundSize: 'cover', backgroundPosition: 'center bottom',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      {/* Dark overlay */}
+      <div style={{ position: 'absolute', inset: 0, background: '#000000aa', pointerEvents: 'none' }} />
+
+      {/* Frame + content */}
+      <div style={{
+        position: 'relative', zIndex: 10,
+        width: '100%', maxWidth: 480,
+        margin: '0 auto',
+      }}>
+        {/* Frame image */}
+        <img
+          src="/story-frame.png"
+          alt=""
+          style={{ width: '100%', display: 'block', imageRendering: 'pixelated' }}
+        />
+
+        {/* Text content — overlaid inside the frame */}
+        <div style={{
+          position: 'absolute',
+          top: '13%', left: '10%', right: '10%', bottom: '6%',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 14, padding: '0 8px',
+          overflowY: 'auto',
+        }}>
+          {STORY.map((para, i) => {
+            if (i > paraIdx) return null;
+            const isActive = i === paraIdx;
+            const isFullyRevealed = revealed[i];
+            const displayText = isActive && !isFullyRevealed
+              ? para.text.slice(0, charIdx)
+              : para.text;
+            return (
+              <StoryParagraph
+                key={i}
+                text={displayText}
+                type={para.type}
+                revealed={isFullyRevealed}
+              />
+            );
+          })}
+          {/* Blinking cursor on active paragraph */}
+          {paraIdx < STORY.length && (
+            <span style={{ animation: 'blink 0.7s step-end infinite', color: '#fbbf24', fontSize: 14, fontFamily: 'monospace', marginTop: -10 }}>▌</span>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom buttons */}
+      <div style={{ position: 'absolute', bottom: 24, left: 0, right: 0, zIndex: 20, display: 'flex', justifyContent: 'center', gap: 12 }}>
+        {paraIdx < STORY.length && (
+          <button onClick={skipAll} className="px-btn px-btn-dark" style={{ fontSize: 9, padding: '10px 20px' }}>
+            ⏩ Skip
+          </button>
+        )}
+        <button onClick={onClose} className="px-btn px-btn-dark" style={{ fontSize: 9, padding: '10px 20px' }}>
+          ✕ Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Lobby ─────────────────────────────────────────────────────
 
 function LobbyView({ state, joinUrl }: { state: GameState; joinUrl: string }) {
   const [showSettings, setShowSettings] = useState(false);
+  const [showStory,    setShowStory]    = useState(false);
+
+  if (showStory) return <StoryView onClose={() => setShowStory(false)} />;
 
   return (
     <div style={{
@@ -175,8 +352,20 @@ function LobbyView({ state, joinUrl }: { state: GameState; joinUrl: string }) {
         background: 'radial-gradient(ellipse 80% 60% at 50% 100%, #00000066 0%, transparent 70%)',
       }} />
 
-      {/* Settings */}
-      <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 200 }}>
+      {/* Top-right buttons: Story + Settings */}
+      <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 200, display: 'flex', gap: 8 }}>
+        <button onClick={() => setShowStory(true)} className="px-clip" style={{
+          background: '#060d20cc',
+          border: '3px solid #1e3050',
+          boxShadow: '3px 3px 0 #000000bb',
+          padding: '8px 12px',
+          cursor: 'pointer',
+          fontSize: 11,
+          color: '#fbbf24',
+          backdropFilter: 'blur(4px)',
+          fontFamily: "'Press Start 2P', monospace",
+          letterSpacing: 1,
+        }}>📖</button>
         <button onClick={() => setShowSettings(s => !s)} className="px-clip" style={{
           background: '#060d20cc',
           border: '3px solid #1e3050',
