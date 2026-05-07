@@ -199,14 +199,10 @@ function StoryParagraph({ text, type, revealed }: { text: string; type?: string;
     );
   }
 
-  // While typing: left-align so text grows left→right.
-  // Once fully revealed: center it. Short single-line paras always center fine.
-  const align = revealed ? 'center' : 'left';
   const baseStyle: React.CSSProperties = {
     fontFamily: "'Press Start 2P', monospace", fontSize: 12,
     color: '#cbd5e1', lineHeight: 2, whiteSpace: 'pre-line',
-    width: '100%', textAlign: align,
-    transition: 'text-align 0s',
+    width: '100%', textAlign: 'center',
   };
 
   // Color heroes/villains once fully revealed
@@ -312,10 +308,6 @@ function StoryView({ onClose }: { onClose: () => void }) {
               />
             );
           })}
-          {/* Blinking cursor on active paragraph */}
-          {paraIdx < STORY.length && (
-            <span style={{ animation: 'blink 0.7s step-end infinite', color: '#fbbf24', fontSize: 14, fontFamily: 'monospace', marginTop: -10 }}>▌</span>
-          )}
         </div>
       </div>
 
