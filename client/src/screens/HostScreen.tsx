@@ -159,7 +159,7 @@ const STORY: { text: string; type?: 'divider' | 'title' | 'welcome' }[] = [
   { text: '◆', type: 'divider' },
   { text: 'There is a place where\nchampions gather.' },
   { text: '◆', type: 'divider' },
-  { text: 'Not to fight with swords...\nBut with their brains.' },
+  { text: 'Not to fight with just swords...\nBut with their brains.' },
   { text: '◆', type: 'divider' },
   { text: 'The Quiz King has summoned\nthe greatest heroes and villains\nfrom every universe to compete.' },
   { text: '◆', type: 'divider' },
