@@ -266,11 +266,13 @@ function StoryView({ onClose }: { onClose: () => void }) {
       {/* Dark overlay */}
       <div style={{ position: 'absolute', inset: 0, background: '#000000aa', pointerEvents: 'none' }} />
 
-      {/* Frame + content */}
+      {/* Frame + content — size by height so text fits without scrolling */}
       <div style={{
         position: 'relative', zIndex: 10,
-        width: '100%', maxWidth: 480,
+        height: '92vh',
+        width: `calc(92vh * (1024 / 1536))`, // maintain frame aspect ratio
         margin: '0 auto',
+        flexShrink: 0,
       }}>
         {/* Frame image */}
         <img
@@ -286,7 +288,7 @@ function StoryView({ onClose }: { onClose: () => void }) {
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
           gap: 14, padding: '0 8px',
-          overflowY: 'auto',
+          overflow: 'hidden',
         }}>
           {STORY.map((para, i) => {
             if (i > paraIdx) return null;
