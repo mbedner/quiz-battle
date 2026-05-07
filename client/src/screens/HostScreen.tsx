@@ -199,11 +199,21 @@ function StoryParagraph({ text, type, revealed }: { text: string; type?: string;
     );
   }
 
-  // Normal paragraph — color heroes/villains once fully revealed
+  // While typing: left-align so text grows left→right.
+  // Once fully revealed: center it. Short single-line paras always center fine.
+  const align = revealed ? 'center' : 'left';
+  const baseStyle: React.CSSProperties = {
+    fontFamily: "'Press Start 2P', monospace", fontSize: 12,
+    color: '#cbd5e1', lineHeight: 2, whiteSpace: 'pre-line',
+    width: '100%', textAlign: align,
+    transition: 'text-align 0s',
+  };
+
+  // Color heroes/villains once fully revealed
   if (revealed && text.includes('heroes')) {
     const parts = text.split(/(heroes|villains)/g);
     return (
-      <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 12, color: '#cbd5e1', textAlign: 'center', lineHeight: 2, whiteSpace: 'pre-line' }}>
+      <div style={baseStyle}>
         {parts.map((p, i) =>
           p === 'heroes'   ? <span key={i} style={{ color: '#60a5fa' }}>heroes</span>
           : p === 'villains' ? <span key={i} style={{ color: '#f87171' }}>villains</span>
@@ -213,11 +223,7 @@ function StoryParagraph({ text, type, revealed }: { text: string; type?: string;
     );
   }
 
-  return (
-    <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 12, color: '#cbd5e1', textAlign: 'center', lineHeight: 2, whiteSpace: 'pre-line' }}>
-      {text}
-    </div>
-  );
+  return <div style={baseStyle}>{text}</div>;
 }
 
 function StoryView({ onClose }: { onClose: () => void }) {
